@@ -1,0 +1,16 @@
+{
+  "name": "apk-downloader",
+  "version": "1.0.0",
+  "description": "Download APK files from Google Play Store URLs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.2",
+    "cheerio": "1.0.0-rc.10",
+    "cors": "^2.8.5"
+  }
+}
