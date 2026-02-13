@@ -1,115 +1,171 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APK Downloader - Download APK from Play Store</title>
+    <title>APK Downloader | Grab Any Android App Instantly</title>
+    <meta name="description" content="Search by app name or Play Store URL and download APK files directly from trusted sources.">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="logo-icon">
-                    <path d="M5.5 20.5L3.5 19.5L11.5 4L13.5 5L5.5 20.5ZM14 18C14 16.9 14.9 16 16 16C17.1 16 18 16.9 18 18C18 19.1 17.1 20 16 20C14.9 20 14 19.1 14 18ZM6 18C6 16.9 6.9 16 8 16C9.1 16 10 16.9 10 18C10 19.1 9.1 20 8 20C6.9 20 6 19.1 6 18ZM16.5 4L18.5 5L14.5 12L12.5 11L16.5 4Z"/>
-                </svg>
-                <h1>Application Downloader </h1>
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="page-wrapper">
+        <nav class="topbar">
+            <div class="topbar-brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <span class="brand-text">APK Grab</span>
             </div>
-            <p class="subtitle">Search by app name or paste a Play Store URL</p>
-        </header>
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+        </nav>
 
         <main>
-            <div class="search-box">
-                <div class="input-wrapper">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="input-icon">
-                        <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
-                    </svg>
-                    <input 
-                        type="text" 
-                        id="playStoreUrl" 
-                        placeholder="Enter app name (e.g. Spotify) or Play Store URL..."
-                        autocomplete="off"
-                    >
-                    <button id="clearBtn" class="clear-btn" title="Clear">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                        </svg>
-                    </button>
-                </div>
-                <button id="downloadBtn" class="download-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                    </svg>
-                    <span>Search</span>
-                </button>
-            </div>
+            <section class="hero" data-animate="hero">
+                <h1 class="hero-title" data-animate="title">
+                    Find and download<br>
+                    <span class="hero-accent">any Android app</span>
+                </h1>
+                <p class="hero-sub" data-animate="subtitle">
+                    Paste a Play Store link or type an app name. We will find the APK for you across multiple trusted sources.
+                </p>
+            </section>
 
-            <div class="example-urls">
-                <span>Try:</span>
-                <button class="example-btn" data-url="WhatsApp">WhatsApp</button>
-                <button class="example-btn" data-url="Instagram">Instagram</button>
-                <button class="example-btn" data-url="Spotify">Spotify</button>
-                <button class="example-btn" data-url="Subway Surfers">Subway Surfers</button>
-            </div>
-
-            <div id="status" class="status hidden">
-                <div class="spinner"></div>
-                <span id="statusText">Processing...</span>
-            </div>
-
-            <div id="result" class="result hidden">
-                <div class="app-card">
-                    <img id="appIcon" src="" alt="App Icon" class="app-icon">
-                    <div class="app-info">
-                        <h2 id="appName">App Name</h2>
-                        <p id="packageId" class="package-id">com.example.app</p>
-                        <p id="source" class="source">Source: APKPure</p>
+            <div class="search-section" data-animate="search">
+                <div class="search-card">
+                    <div class="search-input-row">
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <input
+                                type="text"
+                                id="playStoreUrl"
+                                placeholder="Search apps or paste a Play Store URL..."
+                                autocomplete="off"
+                            >
+                            <button id="clearBtn" class="clear-btn" title="Clear">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <button id="downloadBtn" class="search-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <span>Search</span>
+                        </button>
                     </div>
                 </div>
-                <div class="download-actions">
-                    <a id="downloadLink" href="#" class="action-btn primary" target="_blank">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                        </svg>
-                        <span>Download APK</span>
-                    </a>
-                    <a id="playStoreLink" href="#" class="action-btn secondary" target="_blank">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
-                        </svg>
-                        <span>View on Play Store</span>
-                    </a>
+
+                <div class="quick-picks" data-animate="picks">
+                    <span class="picks-label">Quick picks</span>
+                    <div class="picks-row">
+                        <button class="example-btn" data-url="WhatsApp">WhatsApp</button>
+                        <button class="example-btn" data-url="Instagram">Instagram</button>
+                        <button class="example-btn" data-url="Spotify">Spotify</button>
+                        <button class="example-btn" data-url="Subway Surfers">Subway Surfers</button>
+                    </div>
                 </div>
-                
-                <div id="modSection" class="mod-section hidden">
-                    <h3 class="mod-title">🔓 Find Mod APK for <span id="modAppName"></span></h3>
-                    <p class="mod-subtitle">Search on these trusted mod sites:</p>
-                    <div id="modSites" class="mod-sites"></div>
-                </div>
-                <p id="downloadNote" class="download-note hidden">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                    </svg>
-                    <span>Click the download button to search for the APK on the source website.</span>
-                </p>
             </div>
 
-            <div id="error" class="error hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            <div id="status" class="status-bar hidden">
+                <div class="pulse-dot"></div>
+                <span id="statusText">Searching across sources...</span>
+            </div>
+
+            <div id="result" class="result-container hidden">
+                <div class="result-card">
+                    <div class="app-header">
+                        <img id="appIcon" src="" alt="App Icon" class="app-icon">
+                        <div class="app-meta">
+                            <h2 id="appName" class="app-title">App Name</h2>
+                            <p id="packageId" class="app-package">com.example.app</p>
+                            <p id="source" class="app-source">Source: APKPure</p>
+                        </div>
+                    </div>
+                    <div class="action-row">
+                        <a id="downloadLink" href="#" class="btn btn-primary" target="_blank">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            <span>Download APK</span>
+                        </a>
+                        <a id="playStoreLink" href="#" class="btn btn-ghost" target="_blank">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/>
+                            </svg>
+                            <span>Play Store</span>
+                        </a>
+                    </div>
+
+                    <div id="modSection" class="mod-section hidden">
+                        <h3 class="mod-heading">Mod versions for <span id="modAppName"></span></h3>
+                        <p class="mod-sub">Browse these trusted mod repositories:</p>
+                        <div id="modSites" class="mod-grid"></div>
+                    </div>
+
+                    <p id="downloadNote" class="info-note hidden">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        <span>Click the download button to fetch the APK from the source.</span>
+                    </p>
+                </div>
+            </div>
+
+            <div id="error" class="error-bar hidden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
                 </svg>
                 <span id="errorText">An error occurred</span>
             </div>
         </main>
 
-        <footer>
-            <p>Disclaimer: This tool is for educational purposes only. Please respect app developers and their terms of service.</p>
+        <footer class="site-footer">
+            <p>For educational and personal use only. Respect app developers and their terms of service.</p>
         </footer>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

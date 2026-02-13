@@ -61,7 +61,7 @@ function isPlayStoreUrl(input) {
 // Search Play Store by app name
 async function searchPlayStore(query) {
     try {
-        console.log(`\n🔍 Searching Play Store for: ${query}`);
+        console.log(`\nSearching Play Store for: ${query}`);
         
         // Use Google Play search
         const searchUrl = `https://play.google.com/store/search?q=${encodeURIComponent(query)}&c=apps&hl=en`;
@@ -87,14 +87,14 @@ async function searchPlayStore(query) {
         });
         
         if (results.length > 0) {
-            console.log(`  ✓ Found ${results.length} apps, using: ${results[0].packageId}`);
+            console.log(`  [OK] Found ${results.length} apps, using: ${results[0].packageId}`);
             return results[0];
         }
         
-        console.log(`  ✗ No apps found`);
+        console.log(`  [--] No apps found`);
         return null;
     } catch (e) {
-        console.log(`  ✗ Search error: ${e.message}`);
+        console.log(`  [ERR] Search error: ${e.message}`);
         return null;
     }
 }
@@ -122,15 +122,60 @@ async function getAppInfo(packageId) {
     }
 }
 
-// FAST: Direct CDN check (fastest method)
-async function tryDirectCDN(packageId) {
+// FAST: Check APKPure (primary method -- page scrape for the download link)
+async function tryApkPure(packageId) {
+    try {
+        // Try the APKPure app page to find the download button
+        const pageUrl = `https://apkpure.com/search?q=${encodeURIComponent(packageId)}`;
+        const resp = await fastClient.get(pageUrl, {
+            headers: {
+                'User-Agent': UA,
+                'Accept': 'text/html',
+                'Accept-Language': 'en-US,en;q=0.9'
+            },
+            timeout: 8000
+        });
+
+        const $ = cheerio.load(resp.data);
+
+        // Find the first matching app link
+        let appHref = null;
+        $('a[href*="/store/apps/details"]').each((i, el) => {
+            const href = $(el).attr('href') || '';
+            if (href.includes(packageId)) {
+                appHref = href;
+                return false;
+            }
+        });
+
+        // Also check for direct first result links
+        if (!appHref) {
+            $('a.first-info, a[href*="/' + packageId.split('.').pop() + '/"]').each((i, el) => {
+                const href = $(el).attr('href') || '';
+                if (href && !href.includes('xapk')) {
+                    appHref = href;
+                    return false;
+                }
+            });
+        }
+
+        if (appHref) {
+            if (!appHref.startsWith('http')) {
+                appHref = `https://apkpure.com${appHref.startsWith('/') ? '' : '/'}${appHref}`;
+            }
+            // Build the download page URL
+            const downloadPageUrl = appHref.replace(/\/$/, '') + '/download';
+            return { url: downloadPageUrl, source: 'APKPure' };
+        }
+    } catch (e) {}
+
+    // Fallback: try the direct CDN URLs
     const cdns = [
         `https://d.cdnpure.com/b/APK/${packageId}?version=latest`,
         `https://d.apkpure.com/b/APK/${packageId}?version=latest`,
     ];
-    
-    // Check all CDNs in parallel
-    const checks = cdns.map(async (url) => {
+
+    for (const url of cdns) {
         try {
             const resp = await fastClient.head(url, {
                 headers: { 'User-Agent': UA, 'Referer': 'https://apkpure.com/' },
@@ -139,11 +184,9 @@ async function tryDirectCDN(packageId) {
             });
             if (resp.status < 400) return { url, source: 'APKPure CDN' };
         } catch (e) {}
-        return null;
-    });
-    
-    const results = await Promise.all(checks);
-    return results.find(r => r !== null) || null;
+    }
+
+    return null;
 }
 
 // Check APKCombo (backup)
@@ -264,7 +307,7 @@ async function searchModSite(config, appName, packageId) {
 
 // Get mod APK from all sources
 async function getModApkLinks(packageId, appName) {
-    console.log(`\n🔓 Searching mods for: ${appName || packageId}`);
+    console.log(`\nSearching mods for: ${appName || packageId}`);
     
     const query = encodeURIComponent(appName || packageId);
     
@@ -272,42 +315,42 @@ async function getModApkLinks(packageId, appName) {
     const modSites = [
         {
             name: 'HappyMod',
-            icon: '😊',
+            icon: 'fa-solid fa-face-smile',
             baseUrl: 'https://happymod.com',
             searchUrl: 'https://happymod.com/search.html?q={query}',
             selectors: { item: '.plist-app-box, .app-item, article', title: ['.plist-app-title', 'h3', '.title', 'a'] }
         },
         {
             name: 'ModYolo',
-            icon: '🎮',
+            icon: 'fa-solid fa-gamepad',
             baseUrl: 'https://modyolo.com',
             searchUrl: 'https://modyolo.com/?s={query}',
             selectors: { item: 'article, .post', title: ['h2 a', 'h3 a', '.entry-title a', 'h2', 'h3'] }
         },
         {
             name: 'LiteAPKs',
-            icon: '⚡',
+            icon: 'fa-solid fa-bolt',
             baseUrl: 'https://liteapks.com',
             searchUrl: 'https://liteapks.com/?s={query}',
             selectors: { item: 'article, .post', title: ['.entry-title a', 'h2 a', 'h3 a', 'h2', 'h3'] }
         },
         {
             name: 'AN1',
-            icon: '🔥',
+            icon: 'fa-solid fa-fire-flame-curved',
             baseUrl: 'https://an1.com',
             searchUrl: 'https://an1.com/search/?q={query}',
             selectors: { item: '.shortstory, article, .item', title: ['h2 a', '.title a', 'h3 a', 'h2', 'h3'] }
         },
         {
             name: 'APKDone',
-            icon: '✅',
+            icon: 'fa-solid fa-circle-check',
             baseUrl: 'https://apkdone.com',
             searchUrl: 'https://apkdone.com/?s={query}',
             selectors: { item: 'article, .post', title: ['.entry-title a', 'h2 a', 'h2', 'h3'] }
         },
         {
             name: 'APKMody',
-            icon: '🎯',
+            icon: 'fa-solid fa-crosshairs',
             baseUrl: 'https://apkmody.io',
             searchUrl: 'https://apkmody.io/?s={query}',
             selectors: { item: 'article, .post', title: ['.entry-title a', 'h2 a', 'h2', 'h3'] }
@@ -322,7 +365,7 @@ async function getModApkLinks(packageId, appName) {
     const finalResults = modSites.map((site, i) => {
         const found = results[i];
         if (found) {
-            console.log(`  ✓ ${site.name}: ${found.title}`);
+            console.log(`  [OK] ${site.name}: ${found.title}`);
             return {
                 name: site.name,
                 icon: site.icon,
@@ -353,12 +396,12 @@ async function getModApkLinks(packageId, appName) {
 
 // Main APK finder - PARALLEL checking for speed
 async function getApkDownloadUrl(packageId) {
-    console.log(`\n⚡ Fast searching: ${packageId}`);
+    console.log(`\nFast searching: ${packageId}`);
     
-    // Try CDN first (fastest)
-    const cdnResult = await tryDirectCDN(packageId);
+    // Try APKPure first (page scrape + CDN fallback)
+    const cdnResult = await tryApkPure(packageId);
     if (cdnResult) {
-        console.log(`  ✓ CDN hit!`);
+        console.log(`  [OK] APKPure hit!`);
         return cdnResult;
     }
     
@@ -370,15 +413,15 @@ async function getApkDownloadUrl(packageId) {
     ]);
     
     if (comboResult) {
-        console.log(`  ✓ APKCombo`);
+        console.log(`  [OK] APKCombo`);
         return comboResult;
     }
     if (mirrorResult) {
-        console.log(`  ✓ APKMirror`);
+        console.log(`  [OK] APKMirror`);
         return mirrorResult;
     }
     
-    console.log(`  ✗ Not found`);
+    console.log(`  [--] Not found`);
     return null;
 }
 
@@ -441,7 +484,7 @@ app.get('/api/download-apk', async (req, res) => {
         let currentUrl = decodeURIComponent(url);
         const filename = `${(name || packageId || 'app').replace(/[^a-zA-Z0-9.-]/g, '_')}.apk`;
         
-        console.log(`\n📥 Downloading: ${filename}`);
+        console.log(`\nDownloading: ${filename}`);
         
         for (let i = 0; i < 8; i++) {
             try {
@@ -466,7 +509,7 @@ app.get('/api/download-apk', async (req, res) => {
                 if (ct.includes('android') || ct.includes('octet-stream') || 
                     (ct.includes('application') && !ct.includes('html') && cl > 100000)) {
                     
-                    console.log(`  ✓ Streaming ${Math.round((cl||0)/1024/1024)}MB`);
+                    console.log(`  [OK] Streaming ${Math.round((cl||0)/1024/1024)}MB`);
                     
                     res.setHeader('Content-Type', 'application/vnd.android.package-archive');
                     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -558,5 +601,5 @@ app.get('/api/download-apk', async (req, res) => {
 app.get('/api/health', (_, res) => res.json({ ok: true }));
 
 app.listen(PORT, () => {
-    console.log(`\n🚀 APK Downloader (Fast) - http://localhost:${PORT}\n`);
+    console.log(`\nAPK Downloader (Fast) -- http://localhost:${PORT}\n`);
 });
