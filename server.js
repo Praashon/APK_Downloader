@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const https = require('https');
 const http = require('http');
+const dns = require('dns').promises;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -262,6 +263,23 @@ async function searchModSite(config, appName, packageId) {
     }
 }
 
+// Security: Prevent SSRF by validating IPs
+async function isSafeUrl(url) {
+    try {
+        const { hostname, protocol } = new URL(url);
+        if (!['http:', 'https:'].includes(protocol)) return false;
+
+        const { address } = await dns.lookup(hostname);
+
+        // Block private/local IPs (IPv4)
+        if (address.match(/(^127\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)|(^0\.)|(^169\.254\.)/)) return false;
+        // Block IPv6 local
+        if (address === '::1' || address.match(/^[fF][cCdD]/) || address.match(/^[fF][eE]80/)) return false;
+
+        return true;
+    } catch { return false; }
+}
+
 // Get mod APK from all sources
 async function getModApkLinks(packageId, appName) {
     console.log(`\n🔓 Searching mods for: ${appName || packageId}`);
@@ -444,6 +462,11 @@ app.get('/api/download-apk', async (req, res) => {
         console.log(`\n📥 Downloading: ${filename}`);
         
         for (let i = 0; i < 8; i++) {
+            // Security Check
+            if (!(await isSafeUrl(currentUrl))) {
+                return res.status(403).json({ error: 'Access to this URL is forbidden' });
+            }
+
             try {
                 const resp = await downloadClient({
                     method: 'GET',
@@ -456,8 +479,15 @@ app.get('/api/download-apk', async (req, res) => {
                         'Connection': 'keep-alive'
                     },
                     responseType: 'stream',
-                    maxRedirects: 5
+                    maxRedirects: 0, // Manual redirect handling for security
+                    validateStatus: s => s < 400
                 });
+
+                // Handle redirects
+                if (resp.status >= 300 && resp.status < 400 && resp.headers.location) {
+                    currentUrl = new URL(resp.headers.location, currentUrl).toString();
+                    continue;
+                }
                 
                 const ct = resp.headers['content-type'] || '';
                 const cl = resp.headers['content-length'];
